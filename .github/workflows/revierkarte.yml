@@ -1,0 +1,57 @@
+# Baut die Revierkarte neu und veröffentlicht sie im Release „revierkarte“.
+# Läuft vor der Saison (1. April) und zur Saisonmitte (1. Juli), außerdem per Knopf „Run workflow“.
+name: Revierkarte bauen
+
+on:
+  schedule:
+    - cron: "0 3 1 4,7 *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: revierkarte
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Speicherplatz schaffen
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Werkzeuge installieren
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq osmium-tool
+          curl -sfL https://github.com/protomaps/go-pmtiles/releases/download/v1.31.2/go-pmtiles_1.31.2_Linux_x86_64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin pmtiles
+          pmtiles version || true
+
+      - name: Karte bauen
+        env:
+          THREADS: "4"
+        run: ./build.sh
+
+      - name: Veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view revierkarte >/dev/null 2>&1 || \
+            gh release create revierkarte --title "Revierkarte" --notes "Kartendaten © OpenStreetMap-Mitwirkende, ODbL. Nicht zur Navigation."
+          # erst die neuen Dateien, zuletzt das Manifest – so lädt niemand eine halb ersetzte Version
+          gh release upload revierkarte out/revierkarte-*.pmtiles out/seezeichen-*.geojson --clobber
+          gh release upload revierkarte out/revierkarte.json --clobber
+          VERSION=$(python3 -c "import json; print(json.load(open('out/revierkarte.json'))['version'])")
+          gh release edit revierkarte --title "Revierkarte (Stand $VERSION)"
+          # ältere Dateien entfernen, die das Manifest nicht mehr nennt
+          KEEP=$(python3 -c "import json; print(' '.join(['revierkarte.json'] + [f['name'] for f in json.load(open('out/revierkarte.json'))['files']]))")
+          for a in $(gh release view revierkarte --json assets --jq '.assets[].name'); do
+            case " $KEEP " in *" $a "*) ;; *) echo "entferne $a"; gh release delete-asset revierkarte "$a" -y ;; esac
+          done

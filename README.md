@@ -6,8 +6,8 @@ Die Dateien liegen im Release [`revierkarte`](../../releases/tag/revierkarte):
 
 | Datei | Inhalt |
 |---|---|
-| `revierkarte.pmtiles` | Rasterkacheln Zoom 8–15 im Stil OpenStreetMap Carto (PMTiles) |
-| `seezeichen.geojson` | Seezeichen aus OpenStreetMap (Tonnen, Pricken, Kardinal-, Sonderzeichen, Feuer, Wracks) |
+| `revierkarte-<Datum>.pmtiles` | Rasterkacheln Zoom 8–15 im Stil OpenStreetMap Carto (PMTiles) |
+| `seezeichen-<Datum>.geojson` | Seezeichen aus OpenStreetMap (Tonnen, Pricken, Kardinal-, Sonderzeichen, Feuer, Wracks) |
 | `revierkarte.json` | Stand der Daten, Dateigrößen und SHA-256-Prüfsummen |
 
 Die App lädt die Karte unter „Mein Boot → Offline-Karte“ und zeigt sie, wenn kein Netz verfügbar ist.
@@ -16,11 +16,15 @@ Die App lädt die Karte unter „Mein Boot → Offline-Karte“ und zeigt sie, w
 
 ## Neu bauen
 
-Voraussetzungen: Docker (z. B. `colima`), `osmium-tool`, `pmtiles`, Python 3.
+**Automatisch:** Die GitHub Action [`Revierkarte bauen`](.github/workflows/revierkarte.yml) baut die Karte
+am 1. April und am 1. Juli neu und veröffentlicht sie, sofern die Prüfung (`check.py`: Zoomstufen,
+Kachelzahl, Größe, Seezeichen) besteht. Von Hand starten: Actions → „Revierkarte bauen“ → „Run workflow“.
+Neue Dateien tragen das Datum im Namen, das Manifest wird zuletzt ersetzt.
+
+**Lokal:** Voraussetzungen Docker (z. B. `colima`), `osmium-tool`, `pmtiles`, Python 3.
 
 ```sh
 ./build.sh
-gh release upload revierkarte out/* --clobber
 ```
 
 Das Skript lädt die OSM-Auszüge von Geofabrik, importiert sie in einen lokalen

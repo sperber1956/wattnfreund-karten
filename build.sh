@@ -29,8 +29,14 @@ osmium export work/seamarks.osm.pbf -f geojsonseq -o work/seamarks.geojsonseq --
 python3 build_seamarks.py work/seamarks.geojsonseq "out/$SEAMARKS"
 
 echo "== Tiefenlinien (BSH)"
-python3 fetch_depths.py $W $S $E $N 9 14 work/tiefenlinien.mbtiles
-pmtiles convert work/tiefenlinien.mbtiles "out/$DEPTHS"
+if python3 fetch_depths.py $W $S $E $N 9 14 work/tiefenlinien.mbtiles; then
+  pmtiles convert work/tiefenlinien.mbtiles "out/$DEPTHS"
+else
+  # BSH nicht erreichbar: Tiefenlinien der bisherigen Version weiterverwenden
+  echo "Tiefenlinien nicht abrufbar – übernehme die bisherige Version"
+  gh release download revierkarte -p "tiefenlinien-*.pmtiles" -D work --clobber
+  mv work/tiefenlinien-*.pmtiles "out/$DEPTHS"
+fi
 
 echo "== Import in den Kachelserver"
 docker rm -f wf-tiles >/dev/null 2>&1 || true

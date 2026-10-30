@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v5
 
@@ -37,6 +37,7 @@ jobs:
       - name: Karte bauen
         env:
           THREADS: "4"
+          GH_TOKEN: ${{ github.token }}
         run: ./build.sh
 
       - name: Veröffentlichen

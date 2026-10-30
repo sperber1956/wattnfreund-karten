@@ -32,7 +32,7 @@ def fetch(zxy):
     z, x, y = zxy
     layer = "Coastel_Depths_Depth_Contours" if z <= 11 else "Approach_Depths_Depth_Contours"
     url = WMS.format(layer=layer, bbox=bbox(z, x, y))
-    for attempt in range(6):
+    for attempt in range(8):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "WattnFreund-Revierkarte/1.0"})
             with urllib.request.urlopen(req, timeout=120) as r:
@@ -41,8 +41,8 @@ def fetch(zxy):
                     return z, x, y, data
         except Exception:
             pass
-        time.sleep(2 * (attempt + 1))
-    raise RuntimeError(f"Kachel {z}/{x}/{y} fehlgeschlagen")
+        time.sleep(min(60, 3 * 2 ** attempt))
+    return z, x, y, None
 
 
 def main():
@@ -65,11 +65,17 @@ def main():
         "bounds": f"{w},{s},{e},{n}", "attribution": "Tiefen: © BSH"}.items())
     # Referenz für eine leere Kachel: ein Punkt im Binnenland, wo der BSH keine Daten hat
     empty = fetch((14, *tile(7.5, 53.3, 14)))[3]
-    done = kept = 0
+    if empty is None:
+        sys.exit("BSH-Kartendienst nicht erreichbar")
+    done = kept = failed = 0
     # schonend: wenige gleichzeitige Abrufe beim BSH
-    with ThreadPoolExecutor(4) as pool:
+    with ThreadPoolExecutor(2) as pool:
         for z, x, y, data in pool.map(fetch, jobs):
             done += 1
+            if data is None:
+                failed += 1
+                print(f"Kachel {z}/{x}/{y} nicht erhalten", flush=True)
+                continue
             # leere (ganz durchsichtige) Kacheln weglassen – die App zeigt dort einfach nichts
             if data != empty:
                 db.execute("INSERT INTO tiles VALUES (?, ?, ?, ?)", (z, x, (2 ** z - 1) - y, data))
@@ -79,7 +85,10 @@ def main():
                 db.commit()
     db.commit()
     db.close()
-    print(f"fertig: {len(jobs)} abgerufen, {kept} mit Inhalt")
+    print(f"fertig: {len(jobs)} abgerufen, {kept} mit Inhalt, {failed} fehlgeschlagen")
+    # einzelne Lücken hinnehmen, bei vielen abbrechen
+    if failed > len(jobs) * 0.01:
+        sys.exit(f"zu viele fehlende Kacheln ({failed})")
 
 
 if __name__ == "__main__":

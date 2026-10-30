@@ -8,6 +8,7 @@ Die Dateien liegen im Release [`revierkarte`](../../releases/tag/revierkarte):
 |---|---|
 | `revierkarte-<Datum>.pmtiles` | Rasterkacheln Zoom 8–15 im Stil OpenStreetMap Carto (PMTiles) |
 | `seezeichen-<Datum>.geojson` | Seezeichen aus OpenStreetMap (Tonnen, Pricken, Kardinal-, Sonderzeichen, Feuer, Wracks) |
+| `tiefenlinien-<Datum>.pmtiles` | Tiefenlinien des BSH (Küsten- und Ansteuerungskarten), Zoom 9–14 |
 | `revierkarte.json` | Stand der Daten, Dateigrößen und SHA-256-Prüfsummen |
 
 Die App lädt die Karte unter „Mein Boot → Offline-Karte“ und zeigt sie, wenn kein Netz verfügbar ist.
@@ -34,5 +35,6 @@ und schreibt Seezeichen und Manifest.
 ## Lizenz
 
 Kartendaten © [OpenStreetMap-Mitwirkende](https://www.openstreetmap.org/copyright), verfügbar unter der
-Open Database License (ODbL). Kartenstil [OpenStreetMap Carto](https://github.com/gravitystorm/openstreetmap-carto) (CC0).
+Open Database License (ODbL). Tiefenlinien © Bundesamt für Seeschifffahrt und Hydrographie (BSH), nach GeoNutzV,
+nicht zu Navigationszwecken. Kartenstil [OpenStreetMap Carto](https://github.com/gravitystorm/openstreetmap-carto) (CC0).
 Die Skripte in diesem Repo stehen unter der MIT-Lizenz.

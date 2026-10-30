@@ -1,6 +1,6 @@
 """Plausibilitätsprüfung vor dem Veröffentlichen – bricht mit Fehler ab, wenn etwas fehlt.
 
-Aufruf: python3 check.py <revierkarte.mbtiles> <revierkarte.pmtiles> <seezeichen.geojson>
+Aufruf: python3 check.py <revierkarte.mbtiles> <revierkarte.pmtiles> <seezeichen.geojson> [<tiefenlinien.pmtiles>]
 """
 import json
 import os
@@ -8,6 +8,7 @@ import sqlite3
 import sys
 
 mbtiles, pmtiles, seamarks = sys.argv[1:4]
+depths = sys.argv[4] if len(sys.argv) > 4 else None
 errors = []
 
 db = sqlite3.connect(mbtiles)
@@ -30,6 +31,12 @@ if size < 100_000_000:
 n = len(json.load(open(seamarks, encoding="utf-8"))["features"])
 if n < 2000:
     errors.append(f"nur {n} Seezeichen")
+
+if depths:
+    dsize = os.path.getsize(depths)
+    if dsize < 1_000_000:
+        errors.append(f"Tiefenlinien nur {dsize // 1000} kB")
+    print(f"Tiefenlinien {dsize // 1_000_000} MB")
 
 print(f"{total} Kacheln, {size // 1_000_000} MB, {n} Seezeichen")
 if errors:

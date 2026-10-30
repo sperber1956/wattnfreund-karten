@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Baut die Revierkarte für Watt'n Freund: OSM-Carto-Kacheln (PMTiles) und Seezeichen (GeoJSON).
 # Voraussetzungen: docker, osmium-tool, pmtiles, python3
-# Ergebnis in out/: revierkarte-<Datum>.pmtiles, seezeichen-<Datum>.geojson, revierkarte.json
+# Ergebnis in out/: revierkarte-<Datum>.pmtiles, seezeichen-<Datum>.geojson, tiefenlinien-<Datum>.pmtiles, revierkarte.json
 set -euo pipefail
 cd "$(dirname "$0")"
 BBOX=6.55,53.25,8.45,54.25          # Borkum/Dollart bis Jade, Helgoland
@@ -9,9 +9,10 @@ W=6.55; S=53.25; E=8.45; N=54.25
 ZMIN=8; ZMAX=15
 THREADS=${THREADS:-6}
 IMAGE=overv/openstreetmap-tile-server:2.3.0
-VERSION=${VERSION:-$(date -u +%Y-%m-%d)}
+VERSION=${VERSION:-$(date -u +%Y-%m-%dT%H%M)}
 TILES=revierkarte-$VERSION.pmtiles
 SEAMARKS=seezeichen-$VERSION.geojson
+DEPTHS=tiefenlinien-$VERSION.pmtiles
 rm -rf out && mkdir -p work out
 
 echo "== OSM-Daten laden"
@@ -27,6 +28,10 @@ osmium tags-filter work/revier.osm.pbf n/seamark:type -o work/seamarks.osm.pbf -
 osmium export work/seamarks.osm.pbf -f geojsonseq -o work/seamarks.geojsonseq --overwrite
 python3 build_seamarks.py work/seamarks.geojsonseq "out/$SEAMARKS"
 
+echo "== Tiefenlinien (BSH)"
+python3 fetch_depths.py $W $S $E $N 9 14 work/tiefenlinien.mbtiles
+pmtiles convert work/tiefenlinien.mbtiles "out/$DEPTHS"
+
 echo "== Import in den Kachelserver"
 docker rm -f wf-tiles >/dev/null 2>&1 || true
 docker volume rm wf-osm >/dev/null 2>&1 || true
@@ -41,8 +46,8 @@ docker rm -f wf-tiles >/dev/null
 pmtiles convert work/revierkarte.mbtiles "out/$TILES"
 
 echo "== Prüfen"
-python3 check.py work/revierkarte.mbtiles "out/$TILES" "out/$SEAMARKS"
+python3 check.py work/revierkarte.mbtiles "out/$TILES" "out/$SEAMARKS" "out/$DEPTHS"
 
 echo "== Manifest"
-python3 make_manifest.py "$VERSION" "out/$TILES" "out/$SEAMARKS" > out/revierkarte.json
+python3 make_manifest.py "$VERSION" "out/$TILES" "out/$SEAMARKS" "out/$DEPTHS" > out/revierkarte.json
 cat out/revierkarte.json

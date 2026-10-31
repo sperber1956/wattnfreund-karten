@@ -29,10 +29,14 @@ osmium export work/seamarks.osm.pbf -f geojsonseq -o work/seamarks.geojsonseq --
 python3 build_seamarks.py work/seamarks.geojsonseq "out/$SEAMARKS"
 
 echo "== Tiefenlinien (BSH)"
-if python3 fetch_depths.py $W $S $E $N 9 14 work/tiefenlinien.mbtiles; then
+# Die Vermessung ändert sich selten und der BSH-Dienst ist von GitHub aus sehr langsam:
+# normalerweise die bisherige Version übernehmen, neu abrufen nur mit DEPTHS_REFRESH=1 oder wenn keine da ist
+if [ "${DEPTHS_REFRESH:-0}" != 1 ] && gh release download revierkarte -p "tiefenlinien-*.pmtiles" -D work --clobber 2>/dev/null; then
+  echo "übernehme $(ls work/tiefenlinien-*.pmtiles)"
+  mv work/tiefenlinien-*.pmtiles "out/$DEPTHS"
+elif timeout 3h python3 fetch_depths.py $W $S $E $N 9 14 work/tiefenlinien.mbtiles; then
   pmtiles convert work/tiefenlinien.mbtiles "out/$DEPTHS"
 else
-  # BSH nicht erreichbar: Tiefenlinien der bisherigen Version weiterverwenden
   echo "Tiefenlinien nicht abrufbar – übernehme die bisherige Version"
   gh release download revierkarte -p "tiefenlinien-*.pmtiles" -D work --clobber
   mv work/tiefenlinien-*.pmtiles "out/$DEPTHS"

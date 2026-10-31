@@ -22,6 +22,11 @@ am 1. April und am 1. Juli neu und veröffentlicht sie, sofern die Prüfung (`ch
 Kachelzahl, Größe, Seezeichen) besteht. Von Hand starten: Actions → „Revierkarte bauen“ → „Run workflow“.
 Neue Dateien tragen das Datum im Namen, das Manifest wird zuletzt ersetzt.
 
+Die Tiefenlinien übernimmt die Action aus dem bisherigen Release – die Vermessung ändert sich selten, und der
+BSH-Dienst liefert an GitHub nur sehr langsam. Neu abrufen: beim Start von Hand „Tiefenlinien neu beim BSH
+abrufen“ ankreuzen (bis zu 3 Stunden), oder lokal `DEPTHS_REFRESH=1 ./build.sh`. Die App lädt bei einer neuen
+Version nur die Dateien, die sich geändert haben.
+
 **Lokal:** Voraussetzungen Docker (z. B. `colima`), `osmium-tool`, `pmtiles`, Python 3.
 
 ```sh

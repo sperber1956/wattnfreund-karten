@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: "0 3 1 4,7 *"
   workflow_dispatch:
+    inputs:
+      depths_refresh:
+        description: "Tiefenlinien neu beim BSH abrufen (dauert lange)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -37,6 +42,7 @@ jobs:
       - name: Karte bauen
         env:
           THREADS: "4"
+          DEPTHS_REFRESH: ${{ inputs.depths_refresh && '1' || '0' }}
           GH_TOKEN: ${{ github.token }}
         run: ./build.sh
 
@@ -47,7 +53,7 @@ jobs:
           gh release view revierkarte >/dev/null 2>&1 || \
             gh release create revierkarte --title "Revierkarte" --notes "Kartendaten © OpenStreetMap-Mitwirkende, ODbL. Nicht zur Navigation."
           # erst die neuen Dateien, zuletzt das Manifest – so lädt niemand eine halb ersetzte Version
-          gh release upload revierkarte out/revierkarte-*.pmtiles out/seezeichen-*.geojson --clobber
+          gh release upload revierkarte out/revierkarte-*.pmtiles out/seezeichen-*.geojson out/tiefenlinien-*.pmtiles --clobber
           gh release upload revierkarte out/revierkarte.json --clobber
           VERSION=$(python3 -c "import json; print(json.load(open('out/revierkarte.json'))['version'])")
           gh release edit revierkarte --title "Revierkarte (Stand $VERSION)"
